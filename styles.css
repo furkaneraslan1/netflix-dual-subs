@@ -1,0 +1,19 @@
+/* Netflix Dual Subtitles - Styles */
+
+/* Translated subtitle container - base styles only */
+/* Dynamic styles (background, opacity, colors) are controlled via JavaScript settings */
+.netflix-dual-subs-container {
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Ensure visibility in fullscreen */
+.watch-video .netflix-dual-subs-container,
+.watch-video--player-view .netflix-dual-subs-container,
+.nf-player-container .netflix-dual-subs-container,
+:fullscreen .netflix-dual-subs-container,
+:-webkit-full-screen .netflix-dual-subs-container,
+:-moz-full-screen .netflix-dual-subs-container {
+  z-index: 2147483647 !important;
+}

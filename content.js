@@ -467,6 +467,11 @@
 
   // Wait for Netflix player to be ready
   function waitForPlayer() {
+    // Only initialize on actual watch pages, not homepage/browse
+    if (!location.href.includes('/watch/')) {
+      return;
+    }
+
     const maxAttempts = 50;
     let attempts = 0;
 
@@ -513,6 +518,13 @@
     originalReplaceState.apply(this, args);
     handleNavigation();
   };
+
+  // Fallback: Poll for URL changes that bypass History API
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      handleNavigation();
+    }
+  }, 1000);
 
   function handleNavigation() {
     if (location.href !== lastUrl) {

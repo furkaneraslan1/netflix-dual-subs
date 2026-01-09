@@ -345,8 +345,14 @@
 
   // Translate lines and display
   async function translateAndDisplay(lines) {
+    // Check if we have multiple speakers (lines starting with -)
+    const speakerCount = lines.filter(line => line.trim().startsWith('-')).length;
+    const hasMultipleSpeakers = speakerCount > 1;
+
+    // Join all lines with space to form one sentence for translation
+    // This ensures the translator sees the full context, not separate lines
     const fullText = lines.join(' ');
-    const cacheKey = `${settings.translationService}:${settings.targetLanguage}:${lines.join('|')}`;
+    const cacheKey = `${settings.translationService}:${settings.targetLanguage}:${fullText}`;
 
     if (translationCache.has(cacheKey)) {
       showTranslatedSubtitle(translationCache.get(cacheKey));
@@ -367,41 +373,34 @@
     const context = subtitleHistory.join(' ');
 
     try {
-      // Keep previous subtitle visible while translating (no loading state)
-      // Translate all lines in parallel for faster response
-      const translationPromises = lines.map(async (line) => {
-        const lineCacheKey = `${settings.translationService}:${settings.targetLanguage}:${line}`;
-
-        // Return cached translation if available
-        if (translationCache.has(lineCacheKey)) {
-          return translationCache.get(lineCacheKey);
-        }
-
-        // Request translation from background script with context
-        const response = await chrome.runtime.sendMessage({
-          type: 'TRANSLATE',
-          text: line,
-          targetLang: settings.targetLanguage,
-          service: settings.translationService,
-          apiKey: settings.apiKey,
-          libreUrl: settings.libreUrl,
-          context: context // Previous subtitles for context
-        });
-
-        if (response && response.success) {
-          translationCache.set(lineCacheKey, response.translation);
-          return response.translation;
-        }
-        return line; // Fallback to original
+      // Translate the full subtitle text as one unit to preserve context
+      // This ensures multi-line subtitles that form one sentence are translated together
+      const response = await chrome.runtime.sendMessage({
+        type: 'TRANSLATE',
+        text: fullText,
+        targetLang: settings.targetLanguage,
+        service: settings.translationService,
+        apiKey: settings.apiKey,
+        libreUrl: settings.libreUrl,
+        context: context // Previous subtitles for context
       });
-
-      const translatedLines = await Promise.all(translationPromises);
 
       // Check if this translation is still relevant
       if (translationState.cancelled) return;
 
-      // Join with newlines to preserve line structure
-      const fullTranslation = translatedLines.join('\n');
+      let fullTranslation;
+      if (response && response.success) {
+        fullTranslation = response.translation;
+      } else {
+        fullTranslation = fullText; // Fallback to original
+      }
+
+      // If we had multiple speakers, restore line breaks at speaker boundaries
+      // Pattern: sentence ending (. ! ?) followed by space and dash indicates new speaker
+      if (hasMultipleSpeakers) {
+        fullTranslation = fullTranslation.replace(/([.!?])\s+-\s*/g, '$1\n- ');
+      }
+
       translationCache.set(cacheKey, fullTranslation);
 
       // Add current subtitle to history after successful translation

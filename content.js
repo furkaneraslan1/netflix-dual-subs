@@ -6,12 +6,12 @@
   // State
   let settings = {
     enabled: true,
-    targetLanguage: 'tr',
+    targetLanguage: 'en',
     translationService: 'google',
     apiKey: '',
     libreUrl: 'https://libretranslate.com',
     position: 'bottom',
-    translatedSize: 18,
+    translatedSize: 32,
     translatedColor: '#ffff00',
     showBackground: true,
     bgOpacity: 80,
@@ -187,20 +187,11 @@
     translatedContainer.style.bottom = '';
 
     // Position based on settings - use fixed percentages (Netflix subs are ~10-12% from bottom)
-    switch (settings.position) {
-      case 'bottom':
-        // Translated above original - 25% from bottom puts it well above Netflix subs
-        baseStyles.bottom = '25%';
-        break;
-      case 'top':
-        baseStyles.top = '10%';
-        break;
-      case 'translated-bottom':
-        baseStyles.bottom = '12%';
-        break;
-      case 'stacked':
-        baseStyles.bottom = '25%';
-        break;
+    if (settings.position === 'top') {
+      baseStyles.top = '10%';
+    } else {
+      // Default: translated above original
+      baseStyles.bottom = '23%';
     }
 
     // Apply styles

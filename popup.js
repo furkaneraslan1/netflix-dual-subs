@@ -13,6 +13,39 @@ const defaultSettings = {
   textOpacity: 100
 };
 
+// Debounce timer
+let saveTimeout = null;
+
+// Save settings and notify content script (debounced)
+function saveSettings() {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    const activePosition = document.querySelector('.position-option.active');
+
+    const settings = {
+      enabled: document.getElementById('enabled').checked,
+      targetLanguage: document.getElementById('targetLanguage').value,
+      translationService: document.getElementById('translationService').value,
+      apiKey: document.getElementById('apiKey').value,
+      libreUrl: document.getElementById('libreUrl').value,
+      position: activePosition ? activePosition.dataset.position : 'bottom',
+      translatedSize: parseInt(document.getElementById('translatedSize').value),
+      translatedColor: document.getElementById('translatedColor').value,
+      showBackground: document.getElementById('showBackground').checked,
+      bgOpacity: parseInt(document.getElementById('bgOpacity').value),
+      textOpacity: parseInt(document.getElementById('textOpacity').value)
+    };
+
+    await chrome.storage.sync.set(settings);
+
+    // Notify content script of settings change
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.url && tab.url.includes('netflix.com')) {
+      chrome.tabs.sendMessage(tab.id, { type: 'SETTINGS_UPDATED', settings });
+    }
+  }, 150);
+}
+
 // Load settings when popup opens
 document.addEventListener('DOMContentLoaded', async () => {
   const settings = await chrome.storage.sync.get(defaultSettings);
@@ -49,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Translation service change handler
 document.getElementById('translationService').addEventListener('change', (e) => {
   updateServiceFields(e.target.value);
+  saveSettings();
 });
 
 function updateServiceFields(service) {
@@ -64,17 +98,20 @@ document.querySelectorAll('.position-option').forEach(option => {
   option.addEventListener('click', () => {
     document.querySelectorAll('.position-option').forEach(opt => opt.classList.remove('active'));
     option.classList.add('active');
+    saveSettings();
   });
 });
 
 // Size slider update
 document.getElementById('translatedSize').addEventListener('input', (e) => {
   document.getElementById('translatedSizeValue').textContent = `${e.target.value}px`;
+  saveSettings();
 });
 
 // Background toggle
 document.getElementById('showBackground').addEventListener('change', (e) => {
   updateBgOpacityVisibility(e.target.checked);
+  saveSettings();
 });
 
 function updateBgOpacityVisibility(show) {
@@ -85,60 +122,23 @@ function updateBgOpacityVisibility(show) {
 // Opacity sliders
 document.getElementById('bgOpacity').addEventListener('input', (e) => {
   document.getElementById('bgOpacityValue').textContent = `${e.target.value}%`;
+  saveSettings();
 });
 
 document.getElementById('textOpacity').addEventListener('input', (e) => {
   document.getElementById('textOpacityValue').textContent = `${e.target.value}%`;
+  saveSettings();
 });
 
-// Save settings
-document.getElementById('saveBtn').addEventListener('click', async () => {
-  const activePosition = document.querySelector('.position-option.active');
-  
-  const settings = {
-    enabled: document.getElementById('enabled').checked,
-    targetLanguage: document.getElementById('targetLanguage').value,
-    translationService: document.getElementById('translationService').value,
-    apiKey: document.getElementById('apiKey').value,
-    libreUrl: document.getElementById('libreUrl').value,
-    position: activePosition ? activePosition.dataset.position : 'bottom',
-    translatedSize: parseInt(document.getElementById('translatedSize').value),
-    translatedColor: document.getElementById('translatedColor').value,
-    showBackground: document.getElementById('showBackground').checked,
-    bgOpacity: parseInt(document.getElementById('bgOpacity').value),
-    textOpacity: parseInt(document.getElementById('textOpacity').value)
-  };
-  
-  await chrome.storage.sync.set(settings);
-  
-  // Notify content script of settings change
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url && tab.url.includes('netflix.com')) {
-    chrome.tabs.sendMessage(tab.id, { type: 'SETTINGS_UPDATED', settings });
-  }
-  
-  showStatus('Settings saved!', 'success');
-});
+// Enable toggle
+document.getElementById('enabled').addEventListener('change', () => saveSettings());
 
-// Toggle handler - immediate update
-document.getElementById('enabled').addEventListener('change', async (e) => {
-  const settings = await chrome.storage.sync.get(defaultSettings);
-  settings.enabled = e.target.checked;
-  await chrome.storage.sync.set(settings);
-  
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url && tab.url.includes('netflix.com')) {
-    chrome.tabs.sendMessage(tab.id, { type: 'SETTINGS_UPDATED', settings });
-  }
-});
+// Target language
+document.getElementById('targetLanguage').addEventListener('change', () => saveSettings());
 
-function showStatus(message, type) {
-  const status = document.getElementById('status');
-  status.textContent = message;
-  status.className = `status ${type}`;
-  status.style.display = 'block';
-  
-  setTimeout(() => {
-    status.style.display = 'none';
-  }, 3000);
-}
+// Color picker
+document.getElementById('translatedColor').addEventListener('input', () => saveSettings());
+
+// API key and LibreTranslate URL (save on blur to avoid saving on every keystroke)
+document.getElementById('apiKey').addEventListener('change', () => saveSettings());
+document.getElementById('libreUrl').addEventListener('change', () => saveSettings());

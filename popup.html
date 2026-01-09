@@ -201,47 +201,6 @@
       text-decoration: underline;
     }
 
-    .status {
-      margin-top: 16px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 13px;
-      text-align: center;
-    }
-
-    .status.success {
-      background: #1a2e1a;
-      color: #4caf50;
-    }
-
-    .status.error {
-      background: #2e1a1a;
-      color: #f44336;
-    }
-
-    .status.info {
-      background: #1a1a2e;
-      color: #2196f3;
-    }
-
-    .save-btn {
-      width: 100%;
-      padding: 12px;
-      margin-top: 16px;
-      background: #e50914;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .save-btn:hover {
-      background: #f40612;
-    }
-
     .divider {
       height: 1px;
       background: #333;
@@ -357,14 +316,10 @@
     </div>
   </div>
 
-  <button class="save-btn" id="saveBtn">Save Settings</button>
-
   <div class="api-info">
     <strong>Note:</strong> Google Translate is free but may have rate limits. 
     For better quality, get a <a href="https://www.deepl.com/pro-api" target="_blank">DeepL API key</a>.
   </div>
-
-  <div id="status" class="status" style="display: none;"></div>
 
   <script src="popup.js"></script>
 </body>
